@@ -54,7 +54,7 @@ for filename in os.listdir(ncfile_dir):
         #print(nc_file)
 
         #Select region of interest (nuts3)
-        shapefile = "../../NUTS_RG_20M_2021_4326/NUTS_RG_20M_2021_4326.shp"
+        shapefile = "/Users/michaelrogo/software/cli_he_code/hacked/NUTS_RG_20M_2021_4326"
         countries = gpd.read_file(shapefile)
         querry = 3
         countries = countries[countries['LEVL_CODE'] == querry]
@@ -145,28 +145,55 @@ for filename in os.listdir(ncfile_dir):
                 time=slice(start_date, end_date),
                 longitude=slice(state_lon[0], state_lon[1]),
                 latitude=slice(state_lat[0], state_lat[1]))
-            two_months_255
+            #two_months_255
             #df[df.index.duplicated()]
             masked_values = two_months_255.where(ger_mask)
             #print(masked_values)
             x = masked_values.groupby('time').mean(...)
             x_df = x.to_dataframe()
+            
+            #Check if files exist and break to continue with Merging
+            #Assuming you are in a previous extracted folder
+            if os.path.isfile('{}_{}.csv'.format(list_to_string(i), year)) == 1:
+                print("{}_{}.csv exists...".format(i, year))
+                break
+            else:
+                with open('{}_{}.csv'.format(list_to_string(i), year), 'a') as file:
+                    if os.path.getsize('{}_{}.csv'.format(list_to_string(i), year)) == 0:
+                        file.write('time,{}\n'.format(list_to_string(i)))
+                        x_df.to_csv(file, header=False, index=True)
+                    else:
+                        pass
 
-            with open('{}_{}.csv'.format(list_to_string(i), year), 'a') as file:
-                if os.path.getsize('{}_{}.csv'.format(list_to_string(i), year)) == 0:
-                    file.write('time,{}\n'.format(list_to_string(i)))
-                    x_df.to_csv(file, header=False, index=True)
-                else:
-                    pass
+
 #Merge all the regions into one big file called merged.csv
+#First let's remove any existing merge files
+merged_files = [f for f in os.listdir(path) if os.path.isfile(os.path.join(path, f))\
+            if f.startswith('merged')]
+merged_files.sort()
+if merged_files:
+    print("found {} removing...".format(merged_files))
+    for i in merged_files:
+        #print(" + "{}" +", i))
+        os.remove(i)
+else:
+    print("No Existing Merged File. Skipping....")
+    pass
 
-with Sultan.load() as sultan:
-    items = [f for f in os.listdir(path) if os.path.isfile( os.path.join(path, f))\
-             if f.endswith('_{}.csv'.format(year))]
-    items.sort()
-    item = items[0]
-    rest__of_files = list_to_string(items[1:])
-    sultan.csvjoin('-c time {} {} --left > merged_{}.csv'.format(item, rest__of_files, year)).run()
-print("Done Processing Files................\n")
+#Merge all the regions into one big file called merged.csv
+print("\n\nAttempting to merge FILES for each year...\n")
+for filename in os.listdir(ncfile_dir):
+    f = os.path.join(ncfile_dir,filename)
+    if f.endswith('.nc'):
+        year = f[-7:-3]
+        with Sultan.load() as sultan:
+            items = [f for f in os.listdir(path) if os.path.isfile( os.path.join(path, f))\
+                    if f.endswith('_{}.csv'.format(year))]
+            items.sort()
+            item = items[0]
+            rest__of_files = list_to_string(items[1:])
+            sultan.csvjoin('-c time {} {} --left > merged_{}.csv'.format(item, rest__of_files, year)).run()
+        print("Done Processing Files for {}...Moving\n".format(2019))
+print("Done Processing all Files...\n".format(2019))
 
 
